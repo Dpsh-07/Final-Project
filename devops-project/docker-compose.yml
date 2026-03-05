@@ -1,0 +1,61 @@
+# Remove or comment out the version line (it's obsolete in modern Compose)
+# version: '3.8'   ← delete or comment this
+
+services:
+  app:
+    build: .
+    image: javapp
+    container_name: task-api
+    ports:
+      - "4000:4000"                  # or "3000:3000" if port conflict resolved
+    depends_on:
+      - mongo
+    environment:
+      - MONGO_URL=mongodb://mongo:27017/tasksdb
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: mongo-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+
+  sonarqube:
+    image: sonarqube:latest              # ← This is the fix
+    container_name: sonarqube
+    depends_on:
+      - sonarqube-db
+    ports:
+      - "9000:9000"
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      # Uncomment only if startup fails due to low RAM (dev only)
+      # SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    restart: unless-stopped
+
+  sonarqube-db:
+    image: postgres:15
+    container_name: sonarqube-postgres
+    environment:
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+      POSTGRES_DB: sonar
+    volumes:
+      - postgresql_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
+  postgresql_data:
